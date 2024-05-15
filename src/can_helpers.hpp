@@ -8,7 +8,7 @@
 
 enum CAN_Msgs
 {
-    START_ITEM = 0x100,
+    START_ITEM = 0x400,
     STATUS = START_ITEM,
     FAULT,
     // Add CAN payload here
@@ -18,6 +18,13 @@ enum CAN_Msgs
     RLWS,
     FLWS,
     LAST_ITEM
+};
+
+enum AMS_Msgs //READ ONLY
+{
+    AMS_STATUS = 0x100,
+    AMS_FAULT,
+    AMS_TO_DASH
 };
 
 

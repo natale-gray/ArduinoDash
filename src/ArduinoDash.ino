@@ -14,6 +14,8 @@
 // CanMsg disable_msg = CanMsg(CanExtendedId(0x1806E5F4), 5, disable_data);
 // uint16_t count = 0;
 
+#define ADC_MAX_VAL ((1 << 15) - 1)
+
 
 #define BAUDRATE 1000000
 
@@ -78,11 +80,21 @@ void setup() {
 
 
 void loop() {
-  delay(500);
 
-
+  while(CAN.available()){
+    CanMsg msg = CAN.read();
+    if(msg.id == AMS_TO_DASH){
+      //TODO: Parse the status of the IMD fault, AMS fault
+    }
+    else if(msg.id == AMS_FAULT){
+      //TODO: Parse any other fault conditions
+    }
+    else if(msg.id == AMS_STATUS){
+      //TODO: Parse the battery SOC
+    }
+  }
   //check to see if a signal is recieved from one of the inputs
-  brake_pressure = 0.5 + analogRead(BP_PIN) * 4 / 1024;
+  brake_pressure = 0.5 + analogRead(BP_PIN) * 4 / ADC_MAX_VAL;
   Serial.print("bp: ");
   Serial.println(brake_pressure);
   if (brake_pressure < 0.5) Indicator_Flags.Brake_Status = true;
@@ -92,20 +104,9 @@ void loop() {
   Serial.print("rlws: ");
   Serial.println(rearleftws);
 
+  inertia = (digitalRead(IS_PIN) == HIGH ? true : false);
+  drive = (digitalRead(DRIVESIGNAL_PIN) == HIGH ? true : false);
 
-
-  if(digitalRead(IS_PIN) == HIGH) {
-    inertia = true;
-  }
-  else{
-    inertia = false;
-  }
-  if(digitalRead(DRIVESIGNAL_PIN) == HIGH) {
-    drive = true;
-  }
-  else{
-    drive = false;
-  }
   // ReadSA();
   // PlayRTDBuzzer(BUZZER_PIN);
 
@@ -116,6 +117,7 @@ void loop() {
 
   // send_can_data();
 
+  delay(50);
 }
 
 
