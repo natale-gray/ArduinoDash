@@ -6,13 +6,13 @@
 #include <Adafruit_NeoPixel.h>
 #include <helper_functions.hpp>
 
-uint16_t const max_voltage = 3984; // 3984 = 398.4V
-uint16_t const max_current = 50; // 50 = 5.0A
-uint8_t enable_data[] = {(max_voltage >> 8) & 0xFF, max_voltage & 0xFF, (max_current >> 8) & 0xFF, max_current & 0xFF,0x0};
-uint8_t disable_data[] = {(max_voltage >> 8) & 0xFF, max_voltage & 0xFF, (max_current >> 8) & 0xFF, max_current & 0xFF,0x1};
-CanMsg enable_msg = CanMsg(CanExtendedId(0x1806E5F4), 5, enable_data);
-CanMsg disable_msg = CanMsg(CanExtendedId(0x1806E5F4), 5, disable_data);
-uint16_t count = 0;
+// uint16_t const max_voltage = 3984; // 3984 = 398.4V
+// uint16_t const max_current = 50; // 50 = 5.0A
+// uint8_t enable_data[] = {(max_voltage >> 8) & 0xFF, max_voltage & 0xFF, (max_current >> 8) & 0xFF, max_current & 0xFF,0x0};
+// uint8_t disable_data[] = {(max_voltage >> 8) & 0xFF, max_voltage & 0xFF, (max_current >> 8) & 0xFF, max_current & 0xFF,0x1};
+// CanMsg enable_msg = CanMsg(CanExtendedId(0x1806E5F4), 5, enable_data);
+// CanMsg disable_msg = CanMsg(CanExtendedId(0x1806E5F4), 5, disable_data);
+// uint16_t count = 0;
 
 
 #define BAUDRATE 1000000
@@ -47,6 +47,7 @@ uint8_t is_bytes[8] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, inertia ? 0x01 : 
 
 void setup() {
 
+  analogReadResolution(14);
   pinMode(SA_PIN, INPUT_PULLUP);
   // pinMode(FLWS, INPUT);
   // pinMode(RLWS, INPUT);
