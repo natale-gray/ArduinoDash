@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <Adafruit_NeoPixel.h>
 #include <math.h>
+#include <Arduino_CAN.h>
 
-
-
-#define MAX_LEFT_SA_SENSOR 40
-#define MAX_LEFT_SA_WHEEL -23
-#define MAX_RIGHT_SA_SENSOR 120
-#define MAX_RIGHT_SA_WHEEL 23
+// #define MAX_LEFT_SA_SENSOR 40
+// #define MAX_LEFT_SA_WHEEL -23
+// #define MAX_RIGHT_SA_SENSOR 120
+// #define MAX_RIGHT_SA_WHEEL 23
 
 #define NUM_LEDS 17
 #define SA_PIN A5 
@@ -21,11 +20,15 @@
 #define BUZZER_PIN 9
 #define BP_PIN A2
 
+#define ADC_MAX_VAL ((1 << 14) - 1)
+
+const float vref = 5.0;
+const float bp_full_scale = 100.0;
+
 const uint16_t battery_health_red[9] = {(255/11)*8, (255/11)*7, (255/11)*6, (255/11)*5, (255/11)*4, (255/11)*3, (255/11)*2, (255/11)*1, (255/11)*0};
 const uint16_t battery_health_green[9] = {(255/11)*3, (255/11)*4, (255/11)*5, (255/11)*6, (255/11)*7, (255/11)*8, (255/11)*9, (255/11)*10, (255/11)*11};
 
 Adafruit_NeoPixel pixels(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
-
 
 typedef struct {
     bool AMS_Fault;
@@ -113,7 +116,7 @@ void UpdateIndicators(void) {
   }
   else pixels.setPixelColor(Indicator_Indexes.Miscellaneous_Indicator_Index, pixels.Color(0, 30, 0));
 
-  
+  pixels.show();
 }
 
 void UpdateBatteryHealth(uint8_t bat) {
@@ -122,7 +125,6 @@ void UpdateBatteryHealth(uint8_t bat) {
   for (int i=5; i<13 - bat; i++) {
     pixels.setPixelColor(i, pixels.Color(255, 0, 0));
   }
-  Serial.println("LED CONTROL SEQUENCE 3");
 
   // highlight the green ones
   for (int i=0; i<=bat; i++) {
@@ -133,8 +135,46 @@ void UpdateBatteryHealth(uint8_t bat) {
   delay(2000);
 }
 
+float process_brake_pressure(uint32_t adc) {
+  
+  float bp_voltage;
+  float bp;
 
+  bp_voltage = (adc*vref)/ADC_MAX_VAL ;
+  bp = ((bp_voltage - 0.5) / (vref-1)) * bp_full_scale;
 
+  Serial.print("BP Voltage: ");
+  Serial.println(bp_voltage);
+  Serial.print("BP ADC Val: ");
+  Serial.println(analogRead(BP_PIN));
+
+  return bp;
+}
+
+uint32_t process_wheel_speed(uint32_t adc) {
+
+  uint32_t ws_voltage;
+  uint32_t ws_frequency;
+
+  ws_voltage = (vref/ADC_MAX_VAL)*adc;
+
+  // VOUT = VCC × f × C1 × R1
+  // C1 = 10 nf
+  // R1 = LINPOT VALUE
+
+  ws_frequency = ws_voltage / (.00000001 * 5 * 100);
+
+  return ws_frequency;
+}
+
+uint32_t process_steering_angle(uint32_t adc) {
+
+  uint32_t sa_voltage;
+
+  sa_voltage = (vref/ADC_MAX_VAL)*adc;
+
+  return sa_voltage;
+}
 
 void PlayRTDBuzzer(uint8_t pin_num) {
     digitalWrite(pin_num, HIGH);
@@ -143,5 +183,4 @@ void PlayRTDBuzzer(uint8_t pin_num) {
 
     digitalWrite(pin_num, LOW);
     delay(1000);
-
 }
