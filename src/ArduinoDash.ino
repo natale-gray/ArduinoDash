@@ -15,8 +15,12 @@ uint32_t rearleftws;
 uint32_t frontleftws;
 uint32_t inertia;
 uint32_t drive;
+uint8_t battery_soc_percent = 25;
+int8_t max_temp = 0;
+int8_t min_temp = 0;
+float_t actual_pack_voltage = 0;
 
-float brake_pressure;
+float_t brake_pressure;
 uint32_t coolant_temp;
 
 uint8_t battery_health = 3;
@@ -68,8 +72,8 @@ void setup() {
 void loop() {
 
   brake_pressure = process_brake_pressure(analogRead(BP_PIN));
-  Serial.print("Brake Pressure: ");
-  Serial.println(brake_pressure);
+  // Serial.print("Brake Pressure: ");
+  // Serial.println(brake_pressure);
 
   rearleftws = process_wheel_speed(analogRead(RLWS_PIN));
   frontleftws = process_wheel_speed(analogRead(FLWS_PIN));
@@ -81,7 +85,7 @@ void loop() {
 
   // PlayRTDBuzzer(BUZZER_PIN);
 
-  UpdateBatteryHealth(battery_health);
+  UpdateBatteryHealth(battery_soc_percent);
 
   UpdateIndicators();
 
@@ -91,7 +95,7 @@ void loop() {
     CanMsg msg = CAN.read();
     handleCanMessage(msg);
   }
-  delay(10);
+  // delay(10);
 }
 
 void send_can_data(void){
@@ -112,16 +116,10 @@ void send_can_data(void){
 }
 
 void handleCanMessage(const CanMsg &msg) {
-  Serial.print("CAN ID: ");
-  Serial.println(msg.id);
+  // Serial.print("CAN ID: ");
+  // Serial.println(msg.id);
   switch (msg.id) {
-    case ACC_Voltage1_ID:
-      handleAmsToDash(msg);
-      break;
-    case ACC_Voltage2_ID:
-      handleAmsFault(msg);
-      break;
-    case ACC_Voltage3_ID:
+    case ACC_STATUS:
       handleAmsStatus(msg);
       break;
     case VCU_INPUTS_ID:
@@ -141,26 +139,15 @@ void handleAmsFault(const CanMsg &msg) {
 }
 
 void handleAmsStatus(const CanMsg &msg) {
-  // Parse the battery SOC
-    
-  Serial.print("Received: ");
-  float current_voltage = ((msg.data[0] << 8) | msg.data[1]) / 10.0;
-  float current_amps = ((msg.data[2] << 8) | msg.data[3]) / 10.0;
-  Serial.print("Voltage: ");
-  Serial.print(current_voltage);
-  Serial.print("V, Current: ");
-  Serial.print(current_amps);
-  Serial.println("A");
-  uint8_t status = msg.data[4];
-  Serial.print("Status: ");
-  Serial.println(status & 0x1); //Hardware Fault
-  Serial.println(status >> 0x1 & 0x1); // Charger OverTemp
-  Serial.println(status >> 0x2 & 0x1); // Input voltage fault
-  Serial.println(status >> 0x3 & 0x1); // Battery connection fault
-  Serial.println(status >> 0x4 & 0x1); // communication fault
+  battery_soc_percent = msg.data[1];
+  Indicator_Flags.AMS_Fault = (msg.data[0] >> 1) & 0x1;
+  Indicator_Flags.IMD_Fault = (msg.data[0]) & 0x1;
+  max_temp = msg.data[4];
+  min_temp = msg.data[5];
+  uint16_t scaled_pack_voltage = ((msg.data[2] << 8) | msg.data[3]);
+  actual_pack_voltage = scaled_pack_voltage / 10.0;
 
-  count++;
-  delay(10);
+
 }
 
 void handleBPmsg(const CanMsg &msg) {

@@ -54,7 +54,7 @@ typedef struct {
 
 Flags Indicator_Flags = {true, 
                          true, 
-                         false, 
+                         true, 
                          true,
                          true,
                          false,
@@ -62,14 +62,14 @@ Flags Indicator_Flags = {true,
                          true
                          };  // is_enabled = true, is_visible = false, is_editable = true
 
-Flags_Indexes Indicator_Indexes = {4,
-                                   3,
-                                   2,
+Flags_Indexes Indicator_Indexes = {14, //
+                                   15,
+                                   16,
                                    1,
                                    0,
-                                   15,
-                                   14,
-                                   16
+                                   2,
+                                   3,
+                                   4
                                    };
                                    
                                    
@@ -121,18 +121,22 @@ void UpdateIndicators(void) {
 
 void UpdateBatteryHealth(uint8_t bat) {
 
+  if(bat > 100){
+    bat = 0; //this is to ensure that bad data doesnt cause the battery to go higher
+  }
+  uint8_t scaled_percent = ceil(0.09 * bat);
   // Highlight the red ones:
-  for (int i=5; i<13 - bat; i++) {
-    pixels.setPixelColor(i, pixels.Color(255, 0, 0));
+  uint8_t actual_num = 13-scaled_percent;
+  for (int i=5; i<=actual_num; i++) {
+    pixels.setPixelColor(i, pixels.Color(100, 0, 0));
   }
-
   // highlight the green ones
-  for (int i=0; i<=bat; i++) {
-    pixels.setPixelColor(13-i, pixels.Color(battery_health_red[bat], battery_health_green[bat], 0));
+  for (int i=13; i > actual_num; i--) {
+    // Serial.print(i);
+    pixels.setPixelColor(i, pixels.Color(battery_health_red[scaled_percent], battery_health_green[scaled_percent], 0));
   }
-  
   pixels.show();
-  delay(2000);
+  // delay(2000);
 }
 
 float process_brake_pressure(uint32_t adc) {
@@ -143,10 +147,10 @@ float process_brake_pressure(uint32_t adc) {
   bp_voltage = (adc*vref)/ADC_MAX_VAL ;
   bp = ((bp_voltage - 0.5) / (vref-1)) * bp_full_scale;
 
-  Serial.print("BP Voltage: ");
-  Serial.println(bp_voltage);
-  Serial.print("BP ADC Val: ");
-  Serial.println(analogRead(BP_PIN));
+  // Serial.print("BP Voltage: ");
+  // Serial.println(bp_voltage);
+  // Serial.print("BP ADC Val: ");
+  // Serial.println(analogRead(BP_PIN));
 
   return bp;
 }

@@ -10,6 +10,7 @@
 #define ACC_Voltage10_ID 0x112
 #define ACC_Voltage11_ID 0x113
 #define ACC_Voltage12_ID 0x114
+#define ACC_STATUS 0x100
 
 #define VCU_INPUTS_ID 0x2F0A012
 #define BP_MSG_INDEX 1
