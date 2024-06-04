@@ -1,5 +1,6 @@
 #include "can_helpers.hpp"
 #include <Arduino_CAN.h>
+#include <experimental/filesystem>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -14,7 +15,8 @@ uint32_t steering_angle;
 uint32_t rearleftws;
 uint32_t frontleftws;
 uint32_t inertia;
-uint32_t drive;
+bool drive;
+bool last_drive;
 uint8_t battery_soc_percent = 25;
 int8_t max_temp = 0;
 int8_t min_temp = 0;
@@ -26,6 +28,19 @@ uint32_t coolant_temp;
 uint8_t battery_health = 3;
 
 uint16_t count = 0;
+
+// Note frequencies (in Hz) for the "ray ray, UVA" part
+#define NOTE_G4 392
+#define NOTE_A4 440
+#define NOTE_E5 659
+
+// Note durations (in milliseconds)
+#define QUARTER_NOTE 375
+#define HALF_NOTE 750
+
+int melody[] = {NOTE_G4, NOTE_G4, NOTE_A4, NOTE_G4, NOTE_E5};
+int noteDurations[] = {HALF_NOTE, HALF_NOTE, QUARTER_NOTE, QUARTER_NOTE, QUARTER_NOTE};
+
 
 uint8_t is_bytes[8] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, inertia ? 0x01 : 0x00};
 // char rtd_bytes[8] {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, drive ? 0xFF : 0x00};
@@ -83,7 +98,10 @@ void loop() {
 
   steering_angle = process_steering_angle(analogRead(SA_PIN));
 
-  // PlayRTDBuzzer(BUZZER_PIN);
+  if(drive == true && last_drive == false){
+    PlayRTDBuzzer(BUZZER_PIN);
+  }
+  last_drive = drive;
 
   UpdateBatteryHealth(battery_soc_percent);
 
@@ -154,4 +172,13 @@ void handleBPmsg(const CanMsg &msg) {
   Serial.print("Received: ");
   float bp = msg.data[BP_MSG_INDEX];
   Serial.println(bp);
+}
+
+void PlayRTDBuzzer(int pin_num){
+  // Play the melody
+  for (int i = 0; i < 5; i++) {
+    tone(BUZZER_PIN, melody[i], noteDurations[i]);
+    delay(noteDurations[i] * 1.30);  // Add a small delay between notes
+    noTone(BUZZER_PIN);              // Stop the tone
+  }
 }
